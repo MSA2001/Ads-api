@@ -4,6 +4,8 @@ from .serializers import AdSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from .Pagination import StandardResultSetPagination
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 
 
@@ -15,3 +17,17 @@ class AdListView(APIView, StandardResultSetPagination):
         result = self.paginate_queryset(queryset, request)
         serializer = AdSerializer(instance=result, many=True)
         return self.get_paginated_response(serializer.data)
+
+
+class AdCreateView(APIView):
+    serializer_class = AdSerializer
+    parser_classes = (MultiPartParser,)
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        serializer = AdSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.validated_data['publisher'] = request.user
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
