@@ -8,6 +8,7 @@ from .Pagination import StandardResultSetPagination
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsPublisherOrReadOnly
+from django.db.models import Q
 # Create your views here.
 
 
@@ -62,3 +63,14 @@ class AdDetailView(APIView):
         instance = self.get_object()
         instance.delete()
         return Response({'response': 'Ad deleted'})
+
+
+class AdSearchView(APIView, StandardResultSetPagination):
+    serializer_class = AdSerializer
+
+    def get(self, request):
+        q = request.GET.get('q')
+        queryset = Ad.objects.filter(Q(title=q) | Q(caption=q))
+        result = self.paginate_queryset(queryset, request)
+        serializer = AdSerializer(instance=result, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
